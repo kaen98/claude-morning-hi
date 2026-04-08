@@ -80,7 +80,7 @@ Configure via environment variables or a `.env` file in the project root:
 ```bash
 # .env
 CLAUDE_CRON_MODEL=haiku
-CLAUDE_CRON_PROMPT=早安
+# CLAUDE_CRON_PROMPT=hello          # unset = random pick
 CLAUDE_CRON_SCHEDULE="1 7 * * *|1 12 * * *|1 17 * * *"
 CLAUDE_CRON_LOG_DIR=~/.claude/logs
 CLAUDE_CRON_TAG=claude-cron-greeting
@@ -89,7 +89,7 @@ CLAUDE_CRON_TAG=claude-cron-greeting
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CLAUDE_CRON_MODEL` | `haiku` | Claude model name |
-| `CLAUDE_CRON_PROMPT` | `早安` | Prompt text |
+| `CLAUDE_CRON_PROMPT` | random | Prompt text (if unset, picks randomly from 100 built-in short phrases) |
 | `CLAUDE_CRON_SCHEDULE` | `1 7 * * *\|1 12 * * *\|1 17 * * *` | Cron expressions, `\|` separated |
 | `CLAUDE_CRON_LOG_DIR` | `~/.claude/logs` | Log directory |
 | `CLAUDE_CRON_TAG` | `claude-cron-greeting` | Crontab identifier tag |
