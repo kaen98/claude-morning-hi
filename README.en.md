@@ -46,7 +46,7 @@ Window 2: 12:01 → 17:01   ← triggered at lunch, full afternoon covered
 Window 3: 17:01 → 22:01   ← triggered before EOD, evening covered
 ```
 
-The one-minute offset (`07:01` instead of `07:00`) avoids the top-of-hour traffic spike.
+The one-minute offset (`07:01` instead of `07:00`) avoids a boundary race — ensuring each cron trigger lands in a fresh window rather than the tail end of the expiring one.
 
 ---
 
