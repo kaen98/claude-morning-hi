@@ -33,7 +33,118 @@ fi
 
 # ── Defaults ─────────────────────────────────────────────────────────
 MODEL="${CLAUDE_CRON_MODEL:-haiku}"
-PROMPT="${CLAUDE_CRON_PROMPT:-早安}"
+PROMPT="${CLAUDE_CRON_PROMPT:-__random__}"
+
+# ── Random prompts pool ──────────────────────────────────────────────
+RANDOM_PROMPTS=(
+  "早安，今天天气怎么样？"
+  "帮我讲个冷笑话"
+  "推荐一首适合工作时听的歌"
+  "用一句话总结今天的日期"
+  "给我一个编程小技巧"
+  "你觉得咖啡和茶哪个更适合写代码？"
+  "随便聊聊，最近有什么新鲜事？"
+  "帮我想一个变量名，要有创意"
+  "你最喜欢哪种编程语言？"
+  "早上好，给我一点动力"
+  "讲一个关于程序员的段子"
+  "今天适合重构代码吗？"
+  "用emoji描述一下你的心情"
+  "推荐一部科幻电影"
+  "如果代码会说话，它会说什么？"
+  "hello, what's your favorite color?"
+  "给我一个有趣的历史冷知识"
+  "用三个词形容今天"
+  "你怎么看待 tabs vs spaces？"
+  "写一首关于debug的俳句"
+  "推荐一本技术书"
+  "如果你是一个函数，你的返回值是什么？"
+  "今天是星期几？"
+  "说一个你知道的最短的笑话"
+  "bonjour, comment ça va?"
+  "帮我取个项目名"
+  "你觉得AI会写诗吗？写一首试试"
+  "おはようございます"
+  "给我一个摸鱼的理由"
+  "用一行代码表达你的心情"
+  "推荐一个好用的命令行工具"
+  "如果bug是一种动物，它是什么？"
+  "早起的鸟儿有虫吃，早起的程序员呢？"
+  "hey, tell me something interesting"
+  "你觉得递归和循环哪个更优雅？"
+  "给我一个随机数，1到100"
+  "用一个比喻描述编程"
+  "今天的幸运数字是？"
+  "推荐一个周末活动"
+  "hello world 的一百种写法，来一个"
+  "你知道什么有趣的unicode字符？"
+  "hola, ¿cómo estás?"
+  "给我一句鼓励的话"
+  "如果你能发明一个关键字，你会叫它什么？"
+  "讲一个关于Linux的趣事"
+  "今天适合学点什么新东西？"
+  "你怎么看待暗色主题vs亮色主题？"
+  "来一个脑筋急转弯"
+  "guten Morgen!"
+  "推荐一首中文歌"
+  "用一句话解释什么是API"
+  "如果编程语言是食物，Python是什么？"
+  "给我一个commit message的灵感"
+  "你觉得什么时候该用微服务？"
+  "随机推荐一个GitHub上的有趣项目"
+  "안녕하세요"
+  "给我一个摸鱼时可以学的小知识"
+  "你觉得注释重要吗？"
+  "来一句程序员的土味情话"
+  "如果你是一个容器，你会装什么？"
+  "今天要不要写点测试？"
+  "推荐一种新的编程范式让我了解"
+  "привет, как дела?"
+  "给我一个正则表达式的小挑战"
+  "你觉得什么是好的代码？"
+  "来一个关于数据库的冷知识"
+  "buongiorno!"
+  "如果你能穿越到任何年代写代码，你选哪年？"
+  "推荐一个好用的VS Code插件"
+  "你觉得未来的编程会是什么样？"
+  "说一个你知道的算法，用大白话解释"
+  "给我一个激励自己的座右铭"
+  "今天的代码运势如何？"
+  "你更喜欢前端还是后端？"
+  "来一个关于网络协议的趣事"
+  "sawadee krub"
+  "如果代码有味道，好代码闻起来像什么？"
+  "推荐一个提高效率的习惯"
+  "你知道第一个bug的故事吗？"
+  "用一句话解释什么是递归"
+  "今天要不要学一个新的快捷键？"
+  "给我一个关于git的小技巧"
+  "你觉得结对编程怎么样？"
+  "来一个数学趣题"
+  "olá, tudo bem?"
+  "如果你能给所有程序员一个建议，是什么？"
+  "推荐一个有趣的API"
+  "你觉得什么是最被低估的编程语言？"
+  "来一句关于时间复杂度的俏皮话"
+  "merhaba!"
+  "给我一个让代码更可读的建议"
+  "你觉得开源的意义是什么？"
+  "来一个关于编译器的冷知识"
+  "sveiki!"
+  "如果你是一个排序算法，你是哪个？"
+  "推荐一个有趣的命令行彩蛋"
+  "今天学到了什么新东西？"
+  "jambo!"
+  "给我一个减少技术债的小建议"
+  "你觉得最优雅的设计模式是哪个？"
+  "来，干了这杯咖啡，继续写代码"
+)
+
+pick_random_prompt() {
+  local count=${#RANDOM_PROMPTS[@]}
+  local index=$((RANDOM % count))
+  echo "${RANDOM_PROMPTS[$index]}"
+}
 SCHEDULE="${CLAUDE_CRON_SCHEDULE:-1 7 * * *|1 12 * * *|1 17 * * *}"
 LOG_DIR="${CLAUDE_CRON_LOG_DIR:-$HOME/.claude/logs}"
 CRON_TAG="# ${CLAUDE_CRON_TAG:-claude-cron-greeting}"
@@ -108,7 +219,7 @@ cmd_on() {
   local IFS='|'
   read -ra SCHEDS <<< "$SCHEDULE"
   for sched in "${SCHEDS[@]}"; do
-    new_entries="${new_entries}${sched}  ${CLAUDE_BIN} --model ${MODEL} -p '${PROMPT}' >> ${LOG_DIR}/claude-cron.log 2>&1 ${CRON_TAG}
+    new_entries="${new_entries}${sched}  ${SCRIPT_DIR}/$(basename "$0") run >> ${LOG_DIR}/claude-cron.log 2>&1 ${CRON_TAG}
 "
   done
 
@@ -120,7 +231,7 @@ ${new_entries}" | crontab -
     local m h
     m=$(echo "$sched" | awk '{print $1}')
     h=$(echo "$sched" | awk '{print $2}')
-    echo "   $(format_time "$m" "$h")  ${MODEL} → \"${PROMPT}\""
+    echo "   $(format_time "$m" "$h")  ${MODEL} → $([ "$PROMPT" = "__random__" ] && echo "随机提示词/random" || echo "\"${PROMPT}\"")"
   done
   echo ""
   echo "📄 日志 / Log: ${LOG_DIR}/claude-cron.log"
@@ -143,7 +254,7 @@ cmd_status() {
       local m h
       m=$(echo "$line" | awk '{print $1}')
       h=$(echo "$line" | awk '{print $2}')
-      echo "   $(format_time "$m" "$h")  ${MODEL} → \"${PROMPT}\""
+      echo "   $(format_time "$m" "$h")  ${MODEL} → $([ "$PROMPT" = "__random__" ] && echo "随机提示词/random" || echo "\"${PROMPT}\"")"
     done
   else
     echo "❌ 未开启 / Inactive"
@@ -152,14 +263,35 @@ cmd_status() {
   echo "OS: ${OS}  Claude: ${CLAUDE_BIN:-not found}"
 }
 
+resolve_prompt() {
+  if [ "$PROMPT" = "__random__" ]; then
+    pick_random_prompt
+  else
+    echo "$PROMPT"
+  fi
+}
+
+cmd_run() {
+  if [ -z "$CLAUDE_BIN" ]; then
+    echo "❌ 找不到 claude 命令 / claude command not found"
+    exit 1
+  fi
+  local p
+  p="$(resolve_prompt)"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] prompt: ${p}"
+  "$CLAUDE_BIN" --model "$MODEL" -p "$p"
+}
+
 cmd_test() {
   if [ -z "$CLAUDE_BIN" ]; then
     echo "❌ 找不到 claude 命令 / claude command not found"
     exit 1
   fi
-  echo "🧪 测试运行 / Test run: ${CLAUDE_BIN} --model ${MODEL} -p '${PROMPT}'"
+  local p
+  p="$(resolve_prompt)"
+  echo "🧪 测试运行 / Test run: ${CLAUDE_BIN} --model ${MODEL} -p '${p}'"
   echo "---"
-  "$CLAUDE_BIN" --model "$MODEL" -p "$PROMPT"
+  "$CLAUDE_BIN" --model "$MODEL" -p "$p"
 }
 
 cmd_log() {
@@ -255,6 +387,7 @@ case "${1:-help}" in
   on|enable|start)   cmd_on     ;;
   off|disable|stop)  cmd_off    ;;
   status|st)         cmd_status ;;
+  run)               cmd_run    ;;
   test|dry-run)      cmd_test   ;;
   log|logs)          cmd_log    ;;
   help|-h|--help)    cmd_help   ;;
