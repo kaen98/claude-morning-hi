@@ -1,44 +1,44 @@
 # claude-morning-cron
 
-Schedule Claude CLI prompts via crontab. Supports macOS and Linux.
+Manipulate Claude Code's 5-hour usage window into resetting when you actually need it. Via crontab. Supports macOS and Linux.
 
 [中文版 →](README.md)
 
+> **Alternative:** Claude Code now natively supports scheduled tasks at https://claude.ai/code/scheduled — no local cron needed. The "Why" section below is still useful for understanding the window mechanics.
+
 ---
 
-## Why This Exists
+## Why
 
-Claude's usage resets on a **rolling 5-hour window** — starting from your *first message*, not a fixed clock time.
+Claude Code gives you a token budget that resets every 5 hours. The window starts when you send your first message, **floored to the clock hour** (e.g., message at 8:30 → window starts at 8:00).
 
-### What happens if you start at 10 AM?
-
-Assume you haven't touched Claude all morning and send your first message at 10:00:
+### Without vs With Warmup
 
 ```
-Window 1: 10:00 → 15:00   ← only 2 hours before lunch, quota barely touched
-Window 2: 15:00 → 20:00   ← heavy afternoon coding, easy to burn through by 18:00
-Window 3: 20:00 → 01:00   ← resets at 8 PM — you've already clocked out
+            6am    7     8     9    10    11    12    1pm    2     3     4     5    6pm
+             |     |     |     |     |     |     |     |     |     |     |     |     |
+
+Without:              [========== window 1 =========]
+                       work ~8:30-11am  ░░ dead ░░
+                                                    [========== window 2 =========]
+                                                             work ~1pm-6pm
+
+          cron trigger
+               │
+               ▼
+With:        [========== window 1 =========]
+              ░ idle ░  work ~8:30-11am
+                                          [========== window 2 =========]
+                                                  work ~11am-4pm
+                                                                        [== win 3 ==]
+                                                                        work ~4pm-6pm
 ```
 
-What this feels like in practice:
+> With warmup, you squeeze in an extra fresh window starting at 4 PM.
 
-- Morning 10–12: only 2 hours before lunch, quota is far from exhausted
-- After the 15:00 reset, heavy coding easily **burns through the full 5-hour window before 18:00**
-- You hit the rate limit with 1–2 hours left in the workday, right when you need it most
-- The 20:00 reset arrives after you've stopped work — that entire window's quota expires overnight
-- Result: **throttled in the afternoon, quota wasted while you sleep**
+### Default Schedule
 
-### How bad is the misalignment?
-
-| First message | Reset times | Problem |
-|--------------|-------------|---------|
-| 10:00 | 15:00 / **20:00** | Rate-limited before EOD; 20:00 quota burns overnight |
-| 09:00 | 14:00 / **19:00** | 19:00 reset after work, too tired to use it |
-| **07:01** | **12:01 / 17:01** | **Morning / afternoon / evening — all three covered** |
-
-### Why 07:01 / 12:01 / 17:01?
-
-The default schedule sends a lightweight message just before each work block, anchoring resets to a developer-friendly rhythm:
+The default **07:01 / 12:01 / 17:01** anchors windows to a developer-friendly rhythm:
 
 ```
 Window 1: 07:01 → 12:01   ← warm up before work, full morning covered
@@ -46,14 +46,17 @@ Window 2: 12:01 → 17:01   ← triggered at lunch, full afternoon covered
 Window 3: 17:01 → 22:01   ← triggered before EOD, evening covered
 ```
 
-The one-minute offset (`07:01` instead of `07:00`) avoids a boundary race — ensuring each cron trigger lands in a fresh window rather than the tail end of the expiring one.
+The one-minute offset (`07:01` not `07:00`) avoids a boundary race between the trigger and window reset.
 
 ---
 
 ## Quick Start
 
 ```bash
-# Enable default schedule (07:01, 12:01, 17:01 — sends "早安")
+git clone https://github.com/<your-user>/claude-morning-cron.git
+cd claude-morning-cron
+
+# Enable default schedule
 ./claude-morning-cron.sh on
 
 # Check status
@@ -104,6 +107,31 @@ CLAUDE_CRON_PROMPT="hello" CLAUDE_CRON_SCHEDULE="0 * * * *" ./claude-morning-cro
 CLAUDE_CRON_MODEL=opus ./claude-morning-cron.sh test
 ```
 
+---
+
+## About the Quota Window
+
+Some underdocumented details about Claude Code's 5-hour window (as of April 2026):
+
+- **Fixed block**: once anchored, boundaries don't move no matter how much you use
+- **Floors to clock hours**: message at 8:15 → window starts at 8:00
+- **Shared across products**: claude.ai, Claude Code, and Claude Desktop share one pool
+- **Token-based, not message-based**: Extended Thinking and tool use consume budget faster than regular chat
+- **Separate 7-day weekly cap**: independent of the 5-hour window, they don't interact
+
+## FAQ
+
+**Does this waste budget?**
+One Haiku "hi" with no tools, no context. You won't notice it.
+
+**What if I'm already rate-limited?**
+Still works. The request reaches Anthropic's servers either way, and it still anchors the window.
+
+**Don't want to use cron?**
+Claude Code natively supports scheduled tasks: https://claude.ai/code/scheduled — no local setup needed.
+
+---
+
 ## Proxy Support
 
 crontab does not inherit your terminal's proxy settings. If your network requires a proxy to reach the Claude API, the script **automatically captures** your current proxy variables (`http_proxy`, `https_proxy`, etc.) when you run `on` and injects them into the crontab entry.
@@ -112,9 +140,9 @@ crontab does not inherit your terminal's proxy settings. If your network require
 - With proxy: run `./claude-morning-cron.sh on` from a terminal where the proxy is active
 - Proxy changed: re-run `on` to update
 
-### Troubleshooting: cron returns 403
+## Troubleshooting
 
-If you see this in the log:
+### cron returns 403
 
 ```
 Failed to authenticate. API Error: 403 {"error":{"type":"forbidden","message":"Request not allowed"}}
@@ -126,12 +154,27 @@ This is usually **not an auth issue** — it means crontab is missing proxy vari
 2. Re-run `./claude-morning-cron.sh on` from a terminal **with proxy active**
 3. Check `crontab -l` to confirm the entry includes `http_proxy=...` etc.
 
-## macOS Note
+### macOS cron permission denied
 
-cron requires "Full Disk Access" to work properly:  
+cron requires "Full Disk Access":
 **System Settings → Privacy & Security → Full Disk Access → add `/usr/sbin/cron`**
+
+### claude command not found
+
+Make sure Claude Code CLI is installed and in your PATH:
+
+```bash
+which claude         # confirm path
+claude -p "hi"       # confirm it runs
+```
+
+The script searches `claude`, `~/.local/bin/claude`, `/usr/local/bin/claude` in order.
 
 ## Requirements
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (`claude` command available)
 - `bash` 4+, `crontab`
+
+## License
+
+[MIT](LICENSE)
