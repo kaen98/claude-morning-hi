@@ -109,7 +109,68 @@ CLAUDE_CRON_MODEL=opus ./claude-morning-cron.sh test
 cron 需要「全盘访问」权限：  
 **系统设置 → 隐私与安全 → 全盘访问 → 添加 `/usr/sbin/cron`**
 
+## 方案二：远程定时代理（/schedule）
+
+除了本地 crontab，还可以使用 Claude Code 官方的**远程定时代理**功能。代理在 Anthropic 云端运行，无需本地机器保持在线，也不存在 cron 环境下 OAuth 认证失败的问题。
+
+### 本地 crontab vs 远程代理
+
+| | 本地 crontab | 远程代理 /schedule |
+|---|---|---|
+| 运行位置 | 本地机器 | Anthropic 云端 |
+| 认证 | 依赖本地 CLI 凭据（cron 环境可能失败） | 云端自动处理，无需担心 |
+| 机器依赖 | 需要机器开机、cron 服务正常 | 无需本地机器 |
+| 最小间隔 | 1 分钟 | 1 小时 |
+| 访问本地文件 | 可以 | 不可以（隔离沙箱） |
+| GitHub | 不需要 | 需要连接 GitHub 仓库 |
+| 管理界面 | 命令行 | https://claude.ai/code/scheduled |
+
+### 前置条件
+
+1. Claude Max / Team / Enterprise 订阅
+2. 连接 GitHub 仓库：运行 `/web-setup` 或访问 https://claude.ai/code/onboarding?magic=github-app-setup
+3. Claude Code CLI 已安装
+
+### 快速开始
+
+在 Claude Code 中使用 `/schedule` 命令创建，或手动配置。项目提供了预设的提示词文件：
+
+```bash
+# 查看提示词文件
+cat PROMPT.md
+```
+
+### 创建远程代理
+
+在 Claude Code 中执行 `/schedule`，按引导创建。推荐配置：
+
+| 参数 | 推荐值 | 说明 |
+|------|--------|------|
+| 名称 | `morning-greeting-07` | 按时段命名 |
+| Cron (UTC) | `1 23 * * *` | 对应北京时间 07:01 |
+| 模型 | `claude-haiku-4-5-20251001` | 轻量模型，节省 token |
+| 提示词 | 见 `PROMPT.md` | 一句话即可 |
+
+默认三个时段的 UTC cron 表达式（Asia/Shanghai UTC+8）：
+
+| 本地时间 | UTC 时间 | Cron 表达式 |
+|---------|---------|------------|
+| 07:01 | 23:01 (前一天) | `1 23 * * *` |
+| 12:01 | 04:01 | `1 4 * * *` |
+| 17:01 | 09:01 | `1 9 * * *` |
+
+### 管理远程代理
+
+- **查看所有代理**：在 Claude Code 中运行 `/schedule` → 选择 List
+- **手动触发**：`/schedule` → 选择 Run now
+- **修改配置**：`/schedule` → 选择 Update
+- **删除代理**：访问 https://claude.ai/code/scheduled
+- **切换回本地方案**：`./claude-morning-cron.sh on`
+
+---
+
 ## 依赖
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)（`claude` 命令可用）
-- `bash` 4+、`crontab`
+- 本地方案：`bash` 4+、`crontab`
+- 远程方案：GitHub 仓库连接、Claude Max/Team/Enterprise 订阅

@@ -109,7 +109,68 @@ CLAUDE_CRON_MODEL=opus ./claude-morning-cron.sh test
 cron requires "Full Disk Access" to work properly:  
 **System Settings → Privacy & Security → Full Disk Access → add `/usr/sbin/cron`**
 
+## Option B: Remote Scheduled Agents (/schedule)
+
+Instead of local crontab, you can use Claude Code's official **remote scheduled agents**. Agents run in Anthropic's cloud — no need to keep your machine online, and no OAuth authentication issues in cron environments.
+
+### Local crontab vs Remote Agents
+
+| | Local crontab | Remote /schedule |
+|---|---|---|
+| Runs on | Your machine | Anthropic cloud |
+| Auth | Depends on local CLI credentials (may fail in cron) | Handled automatically |
+| Machine dependency | Must be on, cron running | None |
+| Minimum interval | 1 minute | 1 hour |
+| Local file access | Yes | No (sandboxed) |
+| GitHub | Not required | Required |
+| Management UI | CLI | https://claude.ai/code/scheduled |
+
+### Prerequisites
+
+1. Claude Max / Team / Enterprise subscription
+2. Connect GitHub repo: run `/web-setup` or visit https://claude.ai/code/onboarding?magic=github-app-setup
+3. Claude Code CLI installed
+
+### Quick Start
+
+Use the `/schedule` command in Claude Code to create triggers, or configure manually. The project includes a pre-written prompt file:
+
+```bash
+# View the prompt file
+cat PROMPT.md
+```
+
+### Creating Remote Agents
+
+Run `/schedule` in Claude Code and follow the prompts. Recommended config:
+
+| Parameter | Recommended | Description |
+|-----------|-------------|-------------|
+| Name | `morning-greeting-07` | Named by time slot |
+| Cron (UTC) | `1 23 * * *` | 07:01 Asia/Shanghai |
+| Model | `claude-haiku-4-5-20251001` | Lightweight, saves tokens |
+| Prompt | See `PROMPT.md` | One line is enough |
+
+Default three time slots in UTC cron (Asia/Shanghai UTC+8):
+
+| Local time | UTC time | Cron expression |
+|-----------|---------|------------|
+| 07:01 | 23:01 (prev day) | `1 23 * * *` |
+| 12:01 | 04:01 | `1 4 * * *` |
+| 17:01 | 09:01 | `1 9 * * *` |
+
+### Managing Remote Agents
+
+- **List all agents**: Run `/schedule` in Claude Code → choose List
+- **Manual trigger**: `/schedule` → choose Run now
+- **Update config**: `/schedule` → choose Update
+- **Delete agents**: Visit https://claude.ai/code/scheduled
+- **Switch back to local**: `./claude-morning-cron.sh on`
+
+---
+
 ## Requirements
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (`claude` command available)
-- `bash` 4+, `crontab`
+- Local option: `bash` 4+, `crontab`
+- Remote option: GitHub repo connected, Claude Max/Team/Enterprise subscription
