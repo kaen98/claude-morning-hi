@@ -104,6 +104,28 @@ CLAUDE_CRON_PROMPT="你好" CLAUDE_CRON_SCHEDULE="0 * * * *" ./claude-morning-cr
 CLAUDE_CRON_MODEL=opus ./claude-morning-cron.sh test
 ```
 
+## 代理支持
+
+crontab 环境不会继承终端的代理设置。如果你的网络需要通过代理访问 Claude API，脚本会在执行 `on` 时**自动捕获**当前终端的代理变量（`http_proxy`、`https_proxy` 等）并写入 crontab 条目。
+
+- 无代理环境：无需任何配置，不受影响
+- 有代理环境：确保在代理已生效的终端中运行 `./claude-morning-cron.sh on`
+- 代理变更后：重新运行 `on` 即可更新
+
+### 常见问题：cron 执行报 403
+
+如果日志中出现以下错误：
+
+```
+Failed to authenticate. API Error: 403 {"error":{"type":"forbidden","message":"Request not allowed"}}
+```
+
+这通常**不是认证问题**，而是 crontab 环境缺少代理变量，导致请求无法到达 Claude API。解决方法：
+
+1. 确认终端中 `claude -p "hi"` 能正常执行
+2. 在**代理已生效**的终端中重新运行 `./claude-morning-cron.sh on`
+3. 用 `crontab -l` 确认条目中包含 `http_proxy=...` 等变量
+
 ## macOS 注意
 
 cron 需要「全盘访问」权限：  

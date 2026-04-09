@@ -104,6 +104,28 @@ CLAUDE_CRON_PROMPT="hello" CLAUDE_CRON_SCHEDULE="0 * * * *" ./claude-morning-cro
 CLAUDE_CRON_MODEL=opus ./claude-morning-cron.sh test
 ```
 
+## Proxy Support
+
+crontab does not inherit your terminal's proxy settings. If your network requires a proxy to reach the Claude API, the script **automatically captures** your current proxy variables (`http_proxy`, `https_proxy`, etc.) when you run `on` and injects them into the crontab entry.
+
+- No proxy: nothing to configure, no impact
+- With proxy: run `./claude-morning-cron.sh on` from a terminal where the proxy is active
+- Proxy changed: re-run `on` to update
+
+### Troubleshooting: cron returns 403
+
+If you see this in the log:
+
+```
+Failed to authenticate. API Error: 403 {"error":{"type":"forbidden","message":"Request not allowed"}}
+```
+
+This is usually **not an auth issue** — it means crontab is missing proxy variables, so the request can't reach the Claude API. To fix:
+
+1. Verify `claude -p "hi"` works in your terminal
+2. Re-run `./claude-morning-cron.sh on` from a terminal **with proxy active**
+3. Check `crontab -l` to confirm the entry includes `http_proxy=...` etc.
+
 ## macOS Note
 
 cron requires "Full Disk Access" to work properly:  

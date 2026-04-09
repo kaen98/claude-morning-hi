@@ -99,12 +99,6 @@ stripped_crontab() {
   current_crontab | grep -v "$CRON_TAG" || true
 }
 
-parse_schedules() {
-  local IFS='|'
-  read -ra SCHEDS <<< "$SCHEDULE"
-  echo "${SCHEDS[@]}"
-}
-
 format_time() {
   local m="$1" h="$2"
   printf "%02d:%02d" "$h" "$m"
@@ -131,6 +125,14 @@ cmd_on() {
 
   ensure_log_dir
 
+  # Capture proxy env vars for cron (cron has no proxy by default)
+  local proxy_env=""
+  for var in http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY no_proxy NO_PROXY; do
+    if [ -n "${!var:-}" ]; then
+      proxy_env="${proxy_env}${var}=${!var} "
+    fi
+  done
+
   local base
   base="$(stripped_crontab)"
 
@@ -138,7 +140,7 @@ cmd_on() {
   local IFS='|'
   read -ra SCHEDS <<< "$SCHEDULE"
   for sched in "${SCHEDS[@]}"; do
-    new_entries="${new_entries}${sched}  ${SCRIPT_DIR}/$(basename "$0") run >> ${LOG_DIR}/claude-cron.log 2>&1 ${CRON_TAG}
+    new_entries="${new_entries}${sched}  ${proxy_env}${SCRIPT_DIR}/$(basename "$0") run >> ${LOG_DIR}/claude-cron.log 2>&1 ${CRON_TAG}
 "
   done
 
@@ -195,6 +197,7 @@ cmd_run() {
     echo "❌ 找不到 claude 命令 / claude command not found"
     exit 1
   fi
+  cd "$SCRIPT_DIR"
   local p
   p="$(resolve_prompt)"
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] prompt: ${p}"
