@@ -17,8 +17,8 @@ Claude Code gives you a token budget that resets every 5 hours. The window start
 Assuming work hours 10:00–12:00, 13:30–19:30 (lunch break 12:00–13:30):
 
 ```
-           7am    8     9    10    11    12    1pm    2     3     4     5     6    7pm
-            |     |     |     |     |     |     |     |     |     |     |     |     |
+           7am    8     9    10    11    12    1pm    2     3     4     5     6    7pm    8     9pm
+            |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
                               ├─ morning ─┤  lunch  ├──────── afternoon ────────────┤
 
 Without:                      [=========== window 1 ===========]
