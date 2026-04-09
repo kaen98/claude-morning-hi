@@ -192,16 +192,24 @@ resolve_prompt() {
   fi
 }
 
+run_claude() {
+  local p="$1"
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  # Run from a temp dir to avoid picking up any CLAUDE.md context
+  (cd "$tmpdir" && "$CLAUDE_BIN" --model "$MODEL" -p "$p")
+  rmdir "$tmpdir" 2>/dev/null || true
+}
+
 cmd_run() {
   if [ -z "$CLAUDE_BIN" ]; then
     echo "❌ 找不到 claude 命令 / claude command not found"
     exit 1
   fi
-  cd "$SCRIPT_DIR"
   local p
   p="$(resolve_prompt)"
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] prompt: ${p}"
-  "$CLAUDE_BIN" --model "$MODEL" -p "$p"
+  run_claude "$p"
 }
 
 cmd_test() {
@@ -213,7 +221,7 @@ cmd_test() {
   p="$(resolve_prompt)"
   echo "🧪 测试运行 / Test run: ${CLAUDE_BIN} --model ${MODEL} -p '${p}'"
   echo "---"
-  "$CLAUDE_BIN" --model "$MODEL" -p "$p"
+  run_claude "$p"
 }
 
 cmd_log() {
