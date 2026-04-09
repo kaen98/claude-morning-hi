@@ -10,40 +10,44 @@ Manipulate Claude Code's 5-hour usage window into resetting when you actually ne
 
 ## Why
 
-Claude Code gives you a token budget that resets every 5 hours. The window starts when you send your first message, **floored to the clock hour** (e.g., message at 8:30 → window starts at 8:00).
+Claude Code gives you a token budget that resets every 5 hours. The window starts when you send your first message, **floored to the clock hour** (e.g., message at 10:20 → window starts at 10:00).
 
 ### Without vs With Warmup
 
+Assuming work hours 10:00–12:00, 13:30–19:30 (lunch break 12:00–13:30):
+
 ```
-            6am    7     8     9    10    11    12    1pm    2     3     4     5    6pm
-             |     |     |     |     |     |     |     |     |     |     |     |     |
+           7am    8     9    10    11    12    1pm  1:30   2     3     4     5     6    7pm  7:30
+            |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
+                              ├─ morning ─┤  lunch  ├──────────── afternoon ─────────────────┤
 
-Without:              [========== window 1 =========]
-                       work ~8:30-11am  ░░ dead ░░
-                                                    [========== window 2 =========]
-                                                             work ~1pm-6pm
+Without:                      [============ window 1 ============]
+                                work 10-12  lunch  work 13:30-15
+                                                                 [============ window 2 ============]
+                                                                  work 15-19:30 ⚠ likely hits limit ~18:00
+                                                                                ░░ throttled before EOD ░░
 
-          cron trigger
+           cron trigger
                │
                ▼
-With:        [========== window 1 =========]
-              ░ idle ░  work ~8:30-11am
-                                          [========== window 2 =========]
-                                                  work ~11am-4pm
-                                                                        [== win 3 ==]
-                                                                        work ~4pm-6pm
+With:      [============ window 1 ============]
+            ░ idle ░  work 10:00-12:00
+                                              [============ window 2 ============]
+                                               lunch  work 13:30-17:01
+                                                                                 [==== window 3 ====]
+                                                                                  work 17:01-19:30 ✅
 ```
 
-> With warmup, you squeeze in an extra fresh window starting at 4 PM.
+> With warmup, the afternoon is split across two fresh windows — no more throttling before EOD.
 
 ### Default Schedule
 
-The default **07:01 / 12:01 / 17:01** anchors windows to a developer-friendly rhythm:
+The default **07:01 / 12:01 / 17:01** anchors windows to cover the full workday:
 
 ```
-Window 1: 07:01 → 12:01   ← warm up before work, full morning covered
-Window 2: 12:01 → 17:01   ← triggered at lunch, full afternoon covered
-Window 3: 17:01 → 22:01   ← triggered before EOD, evening covered
+Window 1: 07:01 → 12:01   ← pre-work warmup, covers morning 10:00-12:00
+Window 2: 12:01 → 17:01   ← triggered at lunch, covers afternoon 13:30-17:00
+Window 3: 17:01 → 22:01   ← mid-afternoon trigger, covers wrap-up 17:00-19:30
 ```
 
 The one-minute offset (`07:01` not `07:00`) avoids a boundary race between the trigger and window reset.
