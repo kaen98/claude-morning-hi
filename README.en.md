@@ -17,25 +17,25 @@ Claude Code gives you a token budget that resets every 5 hours. The window start
 Assuming work hours 10:00–12:00, 13:30–19:30 (lunch break 12:00–13:30):
 
 ```
-           7am    8     9    10    11    12    1pm  1:30   2     3     4     5     6    7pm  7:30
-            |     |     |     |     |     |     |     |     |     |     |     |     |     |     |
-                              ├─ morning ─┤  lunch  ├──────────── afternoon ─────────────────┤
+           7am    8     9    10    11    12    1pm    2     3     4     5     6    7pm
+            |     |     |     |     |     |     |     |     |     |     |     |     |
+                              ├─ morning ─┤  lunch  ├──────── afternoon ────────────┤
 
-Without:                      [============ window 1 ============]
+Without:                      [=========== window 1 ===========]
                                 work 10-12  lunch  work 13:30-15
-                                                                 [============ window 2 ============]
-                                                                  work 15-19:30 ⚠ likely hits limit ~18:00
-                                                                                ░░ throttled before EOD ░░
+                                                                [=========== window 2 ===========]
+                                                                 work 15-19:30 ⚠ hits limit ~18:00
+                                                                              ░░ throttled before EOD ░░
 
            cron trigger
                │
                ▼
-With:      [============ window 1 ============]
+With:      [=========== window 1 ===========]
             ░ idle ░  work 10:00-12:00
-                                              [============ window 2 ============]
-                                               lunch  work 13:30-17:01
-                                                                                 [==== window 3 ====]
-                                                                                  work 17:01-19:30 ✅
+                                             [=========== window 2 ===========]
+                                              lunch  work 13:30-17:01
+                                                                              [==== window 3 ====]
+                                                                               work 17:01-19:30 ✅
 ```
 
 > With warmup, the afternoon is split across two fresh windows — no more throttling before EOD.
